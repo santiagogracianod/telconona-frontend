@@ -1,6 +1,8 @@
 "use client"
 
+import axios from "axios"
 import { useState } from "react"
+import { useEffect } from "react"
 // Comentamos temporalmente la importación de Apollo
 // import { useQuery } from "@apollo/client"
 // import { GET_ASSIGNED_ORDERS } from "@/lib/graphql/queries"
@@ -73,6 +75,7 @@ const mockOrders = [
 
 export function OrdersTable() {
   const [page, setPage] = useState(1)
+  const [orders, setOrders] = useState([]);
   const ordersPerPage = 5
 
   // En modo desarrollo, usamos datos de ejemplo
@@ -91,7 +94,38 @@ export function OrdersTable() {
   */
 
   // Usar datos de ejemplo en modo desarrollo
-  const orders = DEV_MODE ? mockOrders : []
+  //const orders = DEV_MODE ? mockOrders : []
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const userId = localStorage.getItem("telconova-user")
+        if (!userId) {
+          console.error("No se encontró el ID del usuario en localStorage")
+          return
+        }
+
+        const response = await axios.get(
+          `https://didactic-space-journey-q7vp4wrrqrwjh9w6v-8080.app.github.dev/ordenes/usuario/${userId}`,
+          {
+            headers: {
+              accept: "*/*",
+            },
+          }
+        )
+
+        setOrders(response.data)
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          console.error("Error al obtener las órdenes:", error.response?.statusText || error.message)
+        } else {
+          console.error("Error inesperado:", error)
+        }
+      }
+    }
+
+    fetchOrders()
+  }, [])
 
   const totalPages = Math.ceil(orders.length / ordersPerPage)
   const paginatedOrders = orders.slice((page - 1) * ordersPerPage, page * ordersPerPage)
@@ -150,13 +184,11 @@ export function OrdersTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Cliente</TableHead>
+              <TableHead>Código</TableHead>
+              <TableHead>Descripción</TableHead>
               <TableHead className="hidden md:table-cell">Dirección</TableHead>
               <TableHead>Estado</TableHead>
-              <TableHead className="hidden md:table-cell">Prioridad</TableHead>
-              <TableHead className="hidden md:table-cell">Progreso</TableHead>
-              <TableHead className="hidden md:table-cell">Fecha</TableHead>
+              <TableHead className="hidden md:table-cell">Fecha de creación</TableHead>
               <TableHead className="text-right">Acción</TableHead>
             </TableRow>
           </TableHeader>
@@ -164,18 +196,11 @@ export function OrdersTable() {
             {paginatedOrders.length > 0 ? (
               paginatedOrders.map((order) => (
                 <TableRow key={order.id}>
-                  <TableCell className="font-medium">{order.id}</TableCell>
-                  <TableCell>{order.client}</TableCell>
-                  <TableCell className="hidden md:table-cell">{order.address}</TableCell>
-                  <TableCell>{getStatusBadge(order.status)}</TableCell>
-                  <TableCell className="hidden md:table-cell">{getPriorityBadge(order.priority)}</TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    <div className="flex items-center gap-2">
-                      <Progress value={order.progress} className="h-2 w-[60px]" />
-                      <span className="text-xs text-muted-foreground">{order.progress}%</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">{order.assignedDate}</TableCell>
+                  <TableCell className="font-medium">{order.codigo}</TableCell>
+                  <TableCell>{order.descripcion}</TableCell>
+                  <TableCell className="hidden md:table-cell">{order.cliente.direccion}</TableCell>
+                  <TableCell className="hidden md:table-cell">{order.estado.nombre}</TableCell>
+                  <TableCell className="hidden md:table-cell">{order.fechaCreacion}</TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" asChild>
                       <Link href={`/orders/${order.id}`}>
@@ -188,7 +213,7 @@ export function OrdersTable() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center">
+                <TableCell colSpan={6} className="h-24 text-center">
                   No se encontraron órdenes que coincidan con los criterios de búsqueda.
                 </TableCell>
               </TableRow>

@@ -9,7 +9,7 @@ export default function DashboardPage() {
     <div className="flex min-h-screen flex-col bg-telco-50/50">
       <DashboardHeader />
       <main className="flex-1 space-y-6 p-6">
-        <MockStatusBanner />
+        {/* <MockStatusBanner /> */}
         <div className="flex flex-col space-y-4">
           <h1 className="text-3xl font-bold text-telco-800">Panel de Órdenes</h1>
           <p className="text-muted-foreground">Gestiona tus órdenes asignadas y actualiza su progreso</p>

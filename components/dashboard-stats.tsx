@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Clock, CheckCircle, AlertCircle, PauseCircle } from "lucide-react"
 
 export function DashboardStats() {
+  
   // En una aplicación real, estos datos vendrían de una API
   const stats = [
     {
