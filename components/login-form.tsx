@@ -41,11 +41,11 @@ export function LoginForm() {
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="email">Correo electrónico</Label>
+        <Label htmlFor="email">Usuario</Label>
         <Input
           id="email"
-          type="email"
-          placeholder="tecnico@telconova.com"
+          type="text"
+          placeholder="tecnico"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={isLoading}

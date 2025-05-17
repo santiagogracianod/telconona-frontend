@@ -1,21 +1,14 @@
+// components/auth-provider.tsx
 "use client"
 
 import type React from "react"
-
 import { createContext, useContext, useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
-// import { useMutation } from "@apollo/client"
-// import { LOGIN } from "@/lib/graphql/mutations"
+import { authService, type User } from "@/lib/services/auth-service"
+import { log } from "console"
 
 // Constante para habilitar el modo de desarrollo
-const DEV_MODE = true // Cambia a false cuando el backend esté listo
-
-type User = {
-  id: string
-  name: string
-  email: string
-  role: string
-}
+const DEV_MODE = process.env.NEXT_PUBLIC_DEV_MODE === 'true';
 
 type AuthContextType = {
   user: User | null
@@ -32,22 +25,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
 
-  // Comentamos temporalmente la mutación de Apollo
-  // const [loginMutation] = useMutation(LOGIN)
-
   useEffect(() => {
     // Check if user is logged in
-    const storedUser = localStorage.getItem("telconova-user")
+    const storedUser = localStorage.getItem("telconova-user");
     if (storedUser) {
-      setUser(JSON.parse(storedUser))
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+      } catch (error) {
+        console.error("Error parsing user data from localStorage:", error);
+        localStorage.removeItem("telconova-user"); // Limpia el almacenamiento si el JSON es inválido
+      }
+    } else {
+      setUser(null);
     }
-    setIsLoading(false)
+    setIsLoading(false);
   }, [])
 
   useEffect(() => {
     // Protect routes
     if (!isLoading) {
       if (!user && pathname !== "/login") {
+        console.log("DEV_MODE", DEV_MODE);
+        
+        
         // En modo desarrollo, podemos omitir la redirección para pruebas
         if (!DEV_MODE) {
           router.push("/login")
@@ -59,11 +60,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, isLoading, pathname, router])
 
   const login = async (email: string, password: string) => {
+    console.log(email, password);
+    
     try {
       setIsLoading(true)
 
       // En modo desarrollo, aceptamos credenciales de prueba
       if (DEV_MODE) {
+        console.log("Modo de desarrollo activado");
+        
         // Aceptamos las credenciales originales o cualquier entrada en modo dev
         if (email === "tecnico@telconova.com" && password === "password") {
           const userData = {
@@ -82,26 +87,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         return false
       }
+      console.log(email,password);
+      
 
-      // Código para producción con GraphQL (comentado temporalmente)
-      /*
-      const { data } = await loginMutation({
-        variables: { email, password },
-      })
-
-      if (data?.login) {
-        const { token, user: userData } = data.login
-
-        localStorage.setItem("telconova-token", token)
-        localStorage.setItem("telconova-user", JSON.stringify(userData))
-
-        setUser(userData)
-        router.push("/dashboard")
-        return true
+      // Código para producción con REST API
+      const response = await authService.login(email, password);
+      console.log("Response", response);
+      console.log("Response", response.userId);
+      
+      if (response && response.token) {
+        localStorage.setItem("telconova-token", response.token);
+        localStorage.setItem("telconova-user", JSON.stringify(response.userId));
+        
+        setUser(response.userId);
+        router.push("/dashboard");
+        return true;
       }
-      */
 
-      return false
+      return false;
     } catch (error) {
       console.error("Login error:", error)
       return false
@@ -111,10 +114,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const logout = () => {
-    setUser(null)
-    localStorage.removeItem("telconova-token")
-    localStorage.removeItem("telconova-user")
-    router.push("/login")
+    authService.logout();
+    setUser(null);
+    router.push("/login");
   }
 
   return <AuthContext.Provider value={{ user, login, logout, isLoading }}>{children}</AuthContext.Provider>
