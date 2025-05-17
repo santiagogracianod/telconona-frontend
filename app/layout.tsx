@@ -4,7 +4,8 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/components/auth-provider"
-import { ApolloProvider } from "@/components/apollo-provider"
+//apollo client graphql
+/* import { ApolloProvider } from "@/components/apollo-provider" */
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -23,9 +24,9 @@ export default function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="light">
-          <ApolloProvider>
+          {/* <ApolloProvider> */}
             <AuthProvider>{children}</AuthProvider>
-          </ApolloProvider>
+          {/* </ApolloProvider> */}
         </ThemeProvider>
       </body>
     </html>
