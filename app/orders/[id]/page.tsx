@@ -1,6 +1,7 @@
 import { OrderDetails } from "@/components/order-details"
 import { OrderStatusUpdate } from "@/components/order-status-update"
 import { OrderEvidence } from "@/components/order-evidence"
+import { OrderMaterials } from "@/components/order-materials" // Importa el nuevo componente
 import { DashboardHeader } from "@/components/dashboard-header"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -25,6 +26,7 @@ export default function OrderPage({ params }: { params: { id: string } }) {
           <div className="md:col-span-2 space-y-6">
             <OrderDetails id={params.id} />
             <OrderEvidence id={params.id} />
+            <OrderMaterials id={params.id} />
           </div>
           <div>
             <OrderStatusUpdate id={params.id} />
@@ -34,3 +36,5 @@ export default function OrderPage({ params }: { params: { id: string } }) {
     </div>
   )
 }
+
+
