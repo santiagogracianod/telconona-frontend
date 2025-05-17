@@ -1,11 +1,6 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
-// import { useMutation } from "@apollo/client"
-// import { UPDATE_ORDER_STATUS } from "@/lib/graphql/mutations"
-// import { GET_ORDER_BY_ID } from "@/lib/graphql/queries"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -14,11 +9,30 @@ import { Loader2, CheckCircle, Clock, PauseCircle, AlertCircle } from "lucide-re
 import { useToast } from "@/hooks/use-toast"
 
 export function OrderStatusUpdate({ id }: { id: string }) {
-  const [status, setStatus] = useState("in-progress")
-  const [progress, setProgress] = useState(50)
+  const [status, setStatus] = useState<string>("")
   const [comment, setComment] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
+
+  // Obtener el estado actual de la orden
+  useEffect(() => {
+    const fetchOrderStatus = async () => {
+      try {
+        const response = await fetch(
+          `https://didactic-space-journey-q7vp4wrrqrwjh9w6v-8080.app.github.dev/ordenes/${id}`
+        )
+        if (!response.ok) {
+          throw new Error("Error al obtener el estado de la orden")
+        }
+        const data = await response.json()
+        setStatus(data.estado.nombre.toLowerCase().replace(" ", "-")) // Convertir el estado a un formato compatible
+      } catch (error) {
+        console.error("Error al obtener el estado de la orden:", error)
+      }
+    }
+
+    fetchOrderStatus()
+  }, [id])
 
   // Simulación de actualización de estado
   const handleSubmit = async (e: React.FormEvent) => {
@@ -89,26 +103,6 @@ export function OrderStatusUpdate({ id }: { id: string }) {
                     <span>Req. adicional</span>
                   </div>
                 </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Progreso (%)</label>
-            <Select
-              value={progress.toString()}
-              onValueChange={(value) => setProgress(Number.parseInt(value))}
-              disabled={status === "completed"}
-            >
-              <SelectTrigger className="border-telco-200 bg-telco-50/50">
-                <SelectValue placeholder="Seleccionar progreso" />
-              </SelectTrigger>
-              <SelectContent>
-                {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((value) => (
-                  <SelectItem key={value} value={value.toString()}>
-                    {value}%
-                  </SelectItem>
-                ))}
               </SelectContent>
             </Select>
           </div>

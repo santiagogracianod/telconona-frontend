@@ -1,33 +1,51 @@
 "use client"
 
+import { useEffect, useState } from "react"
+import axios from "axios"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { User, MapPin, Calendar, Clock, AlertTriangle, Phone, Mail, FileText } from "lucide-react"
-
-// Datos de ejemplo - en una aplicación real, estos vendrían de una API
-const getOrderDetails = (id: string) => {
-  return {
-    id,
-    client: "Empresa ABC",
-    address: "Av. Principal 123, Ciudad",
-    status: "in-progress",
-    priority: "high",
-    progress: 45,
-    date: "2023-05-10",
-    scheduledTime: "10:00 - 12:00",
-    contactName: "Juan Pérez",
-    contactPhone: "+1234567890",
-    contactEmail: "juan@empresaabc.com",
-    description:
-      "Instalación de fibra óptica y configuración de router para servicio de internet de alta velocidad. Cliente requiere conexión en 3 puntos diferentes del local.",
-    notes:
-      "El cliente ha solicitado que se realice la instalación con la menor interrupción posible a sus operaciones diarias.",
-  }
-}
+import { User, MapPin, Calendar, AlertTriangle, FileText } from "lucide-react"
 
 export function OrderDetails({ id }: { id: string }) {
-  const order = getOrderDetails(id)
+  const [order, setOrder] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchOrderDetails = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+
+        const response = await axios.get(
+          `https://didactic-space-journey-q7vp4wrrqrwjh9w6v-8080.app.github.dev/ordenes/${id}`
+        )
+        setOrder(response.data)
+      } catch (err: any) {
+        if (axios.isAxiosError(err)) {
+          setError(err.response?.statusText || err.message)
+        } else {
+          setError("Error inesperado al obtener los detalles de la orden")
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchOrderDetails()
+  }, [id])
+
+  if (loading) {
+    return <p>Cargando detalles de la orden...</p>
+  }
+
+  if (error) {
+    return <p>Error: {error}</p>
+  }
+
+  if (!order) {
+    return <p>No se encontraron detalles para esta orden.</p>
+  }
 
   return (
     <Card>
@@ -40,7 +58,7 @@ export function OrderDetails({ id }: { id: string }) {
             <div className="text-sm font-medium text-muted-foreground">Cliente</div>
             <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-muted-foreground" />
-              <span>{order.client}</span>
+              <span>{order.cliente.nombre}</span>
             </div>
           </div>
 
@@ -48,56 +66,29 @@ export function OrderDetails({ id }: { id: string }) {
             <div className="text-sm font-medium text-muted-foreground">Dirección</div>
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-muted-foreground" />
-              <span>{order.address}</span>
+              <span>{order.cliente.direccion}</span>
             </div>
           </div>
 
           <div className="space-y-1">
-            <div className="text-sm font-medium text-muted-foreground">Fecha</div>
+            <div className="text-sm font-medium text-muted-foreground">Fecha de creación</div>
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span>{order.date}</span>
+              <span>{new Date(order.fechaCreacion).toLocaleDateString()}</span>
             </div>
           </div>
 
           <div className="space-y-1">
-            <div className="text-sm font-medium text-muted-foreground">Horario</div>
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <span>{order.scheduledTime}</span>
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <div className="text-sm font-medium text-muted-foreground">Prioridad</div>
+            <div className="text-sm font-medium text-muted-foreground">Estado</div>
             <div>
-              <Badge className="bg-red-500">Alta</Badge>
+              <Badge className="bg-green-500">{order.estado.nombre}</Badge>
             </div>
           </div>
 
           <div className="space-y-1">
-            <div className="text-sm font-medium text-muted-foreground">Progreso</div>
-            <div className="flex items-center gap-2">
-              <Progress value={order.progress} className="h-2 w-[100px]" />
-              <span className="text-xs">{order.progress}%</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <div className="text-sm font-medium text-muted-foreground">Contacto</div>
-          <div className="grid gap-2 md:grid-cols-3">
-            <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-muted-foreground" />
-              <span>{order.contactName}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Phone className="h-4 w-4 text-muted-foreground" />
-              <span>{order.contactPhone}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-muted-foreground" />
-              <span>{order.contactEmail}</span>
+            <div className="text-sm font-medium text-muted-foreground">Tipo de orden</div>
+            <div>
+              <span>{order.tipo.nombre}</span>
             </div>
           </div>
         </div>
@@ -106,7 +97,7 @@ export function OrderDetails({ id }: { id: string }) {
           <div className="text-sm font-medium text-muted-foreground">Descripción</div>
           <div className="flex items-start gap-2 rounded-md border p-3">
             <FileText className="mt-0.5 h-4 w-4 text-muted-foreground" />
-            <p className="text-sm">{order.description}</p>
+            <p className="text-sm">{order.descripcion}</p>
           </div>
         </div>
 
@@ -114,7 +105,7 @@ export function OrderDetails({ id }: { id: string }) {
           <div className="text-sm font-medium text-muted-foreground">Notas adicionales</div>
           <div className="flex items-start gap-2 rounded-md border p-3">
             <AlertTriangle className="mt-0.5 h-4 w-4 text-muted-foreground" />
-            <p className="text-sm">{order.notes}</p>
+            <p className="text-sm">{order.tipo.descripcion}</p>
           </div>
         </div>
       </CardContent>
