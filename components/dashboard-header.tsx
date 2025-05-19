@@ -1,7 +1,6 @@
 "use client"
 
 import { useAuth } from "@/components/auth-provider"
-import { Logo } from "@/components/logo"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -22,7 +21,6 @@ export function DashboardHeader() {
       <div className="flex h-16 items-center justify-between px-6">
         <div className="flex items-center gap-4">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <Logo className="h-8 w-8 bg-white text-telco-500" />
             <span className="font-bold">TelcoNova</span>
           </Link>
         </div>
