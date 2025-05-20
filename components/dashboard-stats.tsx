@@ -6,7 +6,7 @@ import { Clock, CheckCircle, AlertCircle, PauseCircle } from "lucide-react"
 export function DashboardStats({ orders }: { orders: any[] }) {
   const stats = [
     {
-      title: "Abiertas",
+      title: "Asignada",
       value: orders.filter((order) => order.estado.id === 1).length,
       icon: Clock,
       color: "text-blue-500",
