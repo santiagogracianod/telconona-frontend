@@ -79,7 +79,7 @@ export function OrderMaterials({ id }: { id: string }) {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="bg-telco-500 text-white rounded-t-lg">
         <CardTitle>Materiales utilizados</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
