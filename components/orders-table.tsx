@@ -21,111 +21,10 @@ import { Progress } from "@/components/ui/progress"
 import { Clock, CheckCircle, AlertCircle, PauseCircle, ArrowRight } from "lucide-react"
 import Link from "next/link"
 
-// Constante para habilitar el modo de desarrollo
-const DEV_MODE = true
 
-// Datos de ejemplo para modo de desarrollo
-const mockOrders = [
-  {
-    id: "ORD-1234",
-    client: "Empresa ABC",
-    address: "Av. Principal 123, Ciudad",
-    status: "in-progress",
-    priority: "high",
-    progress: 45,
-    assignedDate: "2023-05-10",
-  },
-  {
-    id: "ORD-1235",
-    client: "Corporación XYZ",
-    address: "Calle Secundaria 456, Ciudad",
-    status: "paused",
-    priority: "medium",
-    progress: 30,
-    assignedDate: "2023-05-09",
-  },
-  {
-    id: "ORD-1236",
-    client: "Industrias 123",
-    address: "Blvd. Industrial 789, Ciudad",
-    status: "completed",
-    priority: "low",
-    progress: 100,
-    assignedDate: "2023-05-08",
-  },
-  {
-    id: "ORD-1237",
-    client: "Servicios Técnicos",
-    address: "Av. Tecnológica 234, Ciudad",
-    status: "additional",
-    priority: "high",
-    progress: 75,
-    assignedDate: "2023-05-07",
-  },
-  {
-    id: "ORD-1238",
-    client: "Telecomunicaciones SA",
-    address: "Calle Conectividad 567, Ciudad",
-    status: "in-progress",
-    priority: "medium",
-    progress: 60,
-    assignedDate: "2023-05-06",
-  },
-]
-
-export function OrdersTable() {
+export function OrdersTable({ orders }: { orders: any[] }) {
   const [page, setPage] = useState(1)
-  const [orders, setOrders] = useState([]);
   const ordersPerPage = 5
-
-  // En modo desarrollo, usamos datos de ejemplo
-  // En producción, usaríamos la consulta GraphQL
-  /*
-  const { loading, error, data } = useQuery(GET_ASSIGNED_ORDERS, {
-    variables: {
-      status: status || undefined,
-      priority: priority || undefined,
-      search: search || undefined,
-    },
-    fetchPolicy: "network-only",
-  });
-
-  const orders = data?.assignedOrders || [];
-  */
-
-  // Usar datos de ejemplo en modo desarrollo
-  //const orders = DEV_MODE ? mockOrders : []
-
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const userId = localStorage.getItem("telconova-user")
-        if (!userId) {
-          console.error("No se encontró el ID del usuario en localStorage")
-          return
-        }
-
-        const response = await axios.get(
-          `https://didactic-space-journey-q7vp4wrrqrwjh9w6v-8080.app.github.dev/ordenes/usuario/${userId}`,
-          {
-            headers: {
-              accept: "*/*",
-            },
-          }
-        )
-
-        setOrders(response.data)
-      } catch (error) {
-        if (axios.isAxiosError(error)) {
-          console.error("Error al obtener las órdenes:", error.response?.statusText || error.message)
-        } else {
-          console.error("Error inesperado:", error)
-        }
-      }
-    }
-
-    fetchOrders()
-  }, [])
 
   const totalPages = Math.ceil(orders.length / ordersPerPage)
   const paginatedOrders = orders.slice((page - 1) * ordersPerPage, page * ordersPerPage)
@@ -165,19 +64,6 @@ export function OrdersTable() {
     }
   }
 
-  const getPriorityBadge = (priority: string) => {
-    switch (priority) {
-      case "high":
-        return <Badge className="bg-red-500">Alta</Badge>
-      case "medium":
-        return <Badge className="bg-yellow-500">Media</Badge>
-      case "low":
-        return <Badge className="bg-green-500">Baja</Badge>
-      default:
-        return null
-    }
-  }
-
   return (
     <div className="space-y-4">
       <div className="rounded-md border">
@@ -200,6 +86,7 @@ export function OrdersTable() {
                   <TableCell>{order.descripcion}</TableCell>
                   <TableCell className="hidden md:table-cell">{order.cliente.direccion}</TableCell>
                   <TableCell className="hidden md:table-cell">{order.estado.nombre}</TableCell>
+                  {/* <TableCell>{getStatusBadge(order.estado.descripcion)}</TableCell> */}
                   <TableCell className="hidden md:table-cell">{order.fechaCreacion}</TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" asChild>
