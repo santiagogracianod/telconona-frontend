@@ -83,9 +83,6 @@ export function LoginForm() {
         </Button>
       </div>
 
-      <div className="text-center text-sm text-muted-foreground">
-        <p>Demo: tecnico@telconova.com / password</p>
-      </div>
     </form>
   )
 }
