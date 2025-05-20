@@ -6,21 +6,21 @@ import { Clock, CheckCircle, AlertCircle, PauseCircle } from "lucide-react"
 export function DashboardStats({ orders }: { orders: any[] }) {
   const stats = [
     {
-      title: "En curso",
+      title: "Abiertas",
       value: orders.filter((order) => order.estado.id === 1).length,
       icon: Clock,
       color: "text-blue-500",
       bgColor: "bg-blue-100",
     },
     {
-      title: "Pausadas",
+      title: "En proceso",
       value: orders.filter((order) => order.estado.id === 2).length,
       icon: PauseCircle,
       color: "text-yellow-500",
       bgColor: "bg-yellow-100",
     },
     {
-      title: "Finalizadas",
+      title: "Cerradas",
       value: orders.filter((order) => order.estado.id === 3).length,
       icon: CheckCircle,
       color: "text-green-500",

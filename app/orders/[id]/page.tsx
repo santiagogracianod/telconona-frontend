@@ -26,10 +26,10 @@ export default function OrderPage({ params }: { params: { id: string } }) {
           <div className="md:col-span-2 space-y-6">
             <OrderDetails id={params.id} />
             <OrderEvidence id={params.id} />
-            <OrderMaterials id={params.id} />
           </div>
           <div>
             <OrderStatusUpdate id={params.id} />
+            <OrderMaterials id={params.id} />
           </div>
         </div>
       </main>

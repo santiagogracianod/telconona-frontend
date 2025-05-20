@@ -107,16 +107,6 @@ export function OrderStatusUpdate({ id }: { id: string }) {
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Comentario</label>
-            <Textarea
-              placeholder="Añade un comentario sobre el cambio de estado..."
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              rows={4}
-              className="border-telco-200 bg-telco-50/50"
-            />
-          </div>
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
