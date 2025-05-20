@@ -11,7 +11,8 @@ export default function LoginPage() {
   const [message, setMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    const expired = searchParams.get("expired")
+    const expired = typeof window !== "undefined" ? searchParams.get("expired") : null;
+
     if (expired) {
       setMessage("Su sesión ha expirado por inactividad.")
     }
