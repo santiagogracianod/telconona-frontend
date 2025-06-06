@@ -5,7 +5,6 @@ import { DashboardHeader } from "@/components/dashboard-header";
 import { OrdersTable } from "@/components/orders-table";
 import { OrderFilters } from "@/components/order-filters";
 import { DashboardStats } from "@/components/dashboard-stats";
-import { MockStatusBanner } from "@/components/mock-status-banner";
 
 export default function DashboardPage() {
   const [orders, setOrders] = useState([]);
