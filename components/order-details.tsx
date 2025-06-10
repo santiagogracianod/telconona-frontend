@@ -6,7 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { User, MapPin, Calendar, AlertTriangle, FileText } from "lucide-react"
 
-export function OrderDetails({ id }: { id: string }) {
+type OrderDetailsProps = Readonly<{
+  id: string;
+}>;
+
+
+export function OrderDetails({ id }: OrderDetailsProps) {
   const [order, setOrder] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -23,7 +28,7 @@ export function OrderDetails({ id }: { id: string }) {
         setOrder(response.data)
       } catch (err: any) {
         if (axios.isAxiosError(err)) {
-          setError(err.response?.statusText || err.message)
+          setError(err.response?.statusText ?? err.message)
         } else {
           setError("Error inesperado al obtener los detalles de la orden")
         }

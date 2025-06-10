@@ -7,8 +7,6 @@ import { useRouter, usePathname } from "next/navigation"
 import { authService, type User } from "@/lib/services/auth-service"
 import { useIdleTimer } from "@/hooks/use-idle-timer"
 
-// Constante para habilitar el modo de desarrollo
-const DEV_MODE = process.env.NEXT_PUBLIC_DEV_MODE === "true"
 
 type AuthContextType = {
   user: User | null
@@ -17,9 +15,14 @@ type AuthContextType = {
   isLoading: boolean
 }
 
+type AuthProviderProps = Readonly<{
+  children: React.ReactNode;
+}>;
+
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
@@ -58,12 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Protect routes
     if (!isLoading) {
       if (!user && pathname !== "/login") {
-        console.log("DEV_MODE", DEV_MODE)
-
-        // En modo desarrollo, podemos omitir la redirección para pruebas
-        if (!DEV_MODE) {
           router.push("/login")
-        }
       } else if (user && pathname === "/login") {
         router.push("/dashboard")
       }
@@ -74,32 +72,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true)
 
-      // En modo desarrollo, aceptamos credenciales de prueba
-      if (DEV_MODE) {
-        console.log("Modo de desarrollo activado")
-
-        // Aceptamos las credenciales originales o cualquier entrada en modo dev
-        if (email === "tecnico@telconova.com" && password === "password") {
-          const userData = {
-            id: "1",
-            name: "Técnico Demo",
-            email: "tecnico@telconova.com",
-            role: "technician",
-          }
-
-          localStorage.setItem("telconova-token", "dev-token-123")
-          localStorage.setItem("telconova-user", JSON.stringify(userData))
-
-          setUser(userData)
-          router.push("/dashboard")
-          return true
-        }
-        return false
-      }
-
       // Código para producción con REST API
       const response = await authService.login(email, password)
-      if (response && response.token) {
+      if (response?.token) {
         localStorage.setItem("telconova-token", response.token)
         localStorage.setItem("telconova-user", JSON.stringify(response.userId))
 

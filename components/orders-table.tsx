@@ -1,8 +1,6 @@
 "use client"
 
-import axios from "axios"
 import { useState } from "react"
-import { useEffect } from "react"
 // Comentamos temporalmente la importación de Apollo
 // import { useQuery } from "@apollo/client"
 // import { GET_ASSIGNED_ORDERS } from "@/lib/graphql/queries"
@@ -17,7 +15,6 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
-import { Progress } from "@/components/ui/progress"
 import { Clock, CheckCircle, AlertCircle, PauseCircle, ArrowRight } from "lucide-react"
 import Link from "next/link"
 
