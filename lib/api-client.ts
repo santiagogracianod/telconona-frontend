@@ -1,6 +1,6 @@
 // lib/api-client.ts
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://musical-fishstick-v6pqrx4466xx2rw6-8080.app.github.dev';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'https://musical-fishstick-v6pqrx4466xx2rw6-8080.app.github.dev';
 
 export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
   // Obtener el token de autenticación

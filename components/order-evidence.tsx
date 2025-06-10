@@ -39,7 +39,11 @@ const mockEvidence = [
   },
 ]
 
-export function OrderEvidence({ id }: { id: string }) {
+type OrderEvidenceProps = Readonly<{
+  id: string;
+}>;
+
+export function OrderEvidence( { id }: OrderEvidenceProps) {
   const [comment, setComment] = useState("")
   const [images, setImages] = useState<File[]>([])
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
@@ -167,7 +171,7 @@ export function OrderEvidence({ id }: { id: string }) {
                       {previewUrls.map((url, index) => (
                         <div key={index} className="relative group">
                           <img
-                            src={url || "/placeholder.svg"}
+                            src={url ?? "/placeholder.svg"}
                             alt={`Evidencia ${index + 1}`}
                             className="h-24 w-full object-cover rounded-md"
                           />
@@ -239,7 +243,7 @@ export function OrderEvidence({ id }: { id: string }) {
                     {evidence.imageUrl && (
                       <div className="grid grid-cols-3 gap-2 mt-2">
                         <img
-                          src={evidence.imageUrl || "/placeholder.svg"}
+                          src={evidence.imageUrl ?? "/placeholder.svg"}
                           alt={`Evidencia ${evidence.id}`}
                           className="h-20 w-full object-cover rounded-md"
                         />

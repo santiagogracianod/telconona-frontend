@@ -3,7 +3,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Clock, CheckCircle, AlertCircle, PauseCircle } from "lucide-react"
 
-export function DashboardStats({ orders }: { orders: any[] }) {
+type DashboardStatsProps = Readonly<{
+  orders: any[];
+}>;
+
+
+export function DashboardStats({ orders }: DashboardStatsProps) {
   const stats = [
     {
       title: "Asignada",

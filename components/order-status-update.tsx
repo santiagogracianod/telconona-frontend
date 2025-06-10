@@ -3,12 +3,15 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, CheckCircle, Clock, PauseCircle, AlertCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
-export function OrderStatusUpdate({ id }: { id: string }) {
+type OrderStatusProps = Readonly<{
+  id: string;
+}>;
+
+export function OrderStatusUpdate({ id }: OrderStatusProps) {
   const [status, setStatus] = useState<string>("")
   const [comment, setComment] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -73,9 +76,9 @@ export function OrderStatusUpdate({ id }: { id: string }) {
       <CardContent className="pt-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Estado actual</label>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="border-telco-200 bg-telco-50/50">
+            <label htmlFor="estado-select" className="text-sm font-medium">Estado actual</label>
+            <Select value={status} onValueChange={setStatus} >
+              <SelectTrigger id="estado-select" className="border-telco-200 bg-telco-50/50">
                 <SelectValue placeholder="Seleccionar estado" />
               </SelectTrigger>
               <SelectContent>

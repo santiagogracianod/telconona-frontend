@@ -7,7 +7,11 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import axios from "axios"
 
-export function OrderMaterials({ id }: { id: string }) {
+type OrderMaterialsProps = Readonly<{
+  id: string;
+}>;
+
+export function OrderMaterials({ id }: OrderMaterialsProps) {
   const [materials, setMaterials] = useState<any[]>([])
   const [requiresMaterial, setRequiresMaterial] = useState(false)
   const [usedMaterials, setUsedMaterials] = useState<{ id: string; quantity: number }[]>([])
@@ -27,10 +31,10 @@ export function OrderMaterials({ id }: { id: string }) {
         )
         const order = response.data
         setRequiresMaterial(order.tipo.requiereMaterial)
-        setMaterials(order.tipo.materiales || []) // Suponiendo que `materiales` es una lista de materiales disponibles
+        setMaterials(order.tipo.materiales ?? []) // Suponiendo que `materiales` es una lista de materiales disponibles
       } catch (err: any) {
         if (axios.isAxiosError(err)) {
-          setError(err.response?.statusText || err.message)
+          setError(err.response?.statusText ?? err.message)
         } else {
           setError("Error inesperado al obtener los materiales de la orden")
         }
