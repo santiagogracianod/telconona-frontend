@@ -13,14 +13,6 @@
     "cy:open": "cypress open",
     "cy:run": "cypress run"
   },
-  "jest": {
-    "collectCoverage": true,
-    "coverageReporters": [
-      "lcov",
-      "text"
-    ],
-    "coverageDirectory": "coverage"
-  },
   "dependencies": {
     "@apollo/client": "latest",
     "@hookform/resolvers": "^3.9.1",
@@ -79,16 +71,18 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "babel-jest": "^30.0.0",
+    "babel-jest": "^29.6.1",
     "cypress": "^14.4.1",
     "eslint": "^8.x",
     "eslint-config-prettier": "^8.x",
-    "jest": "^30.0.0",
+    "jest": "^29.6.1",
+    "jest-environment-jsdom": "^30.0.0",
     "postcss": "^8",
     "prettier": "^3.x",
     "tailwindcss": "^3.4.17",
