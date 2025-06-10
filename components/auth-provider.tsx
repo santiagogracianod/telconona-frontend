@@ -38,7 +38,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   // Configurar el temporizador de inactividad (15 minutos = 900000 ms)
-  useIdleTimer(3000, handleSessionTimeout)
+  useIdleTimer(900000, handleSessionTimeout)
 
   useEffect(() => {
     // Check if user is logged in

@@ -9,16 +9,22 @@ on:
       - main
 
 env:
-  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  # SonarCloud
+  SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+  SONAR_TOKEN:    ${{ secrets.SONAR_TOKEN }}
+  SONAR_ORG_KEY: ${{ secrets.SONAR_ORG_KEY }}
+  SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
+  # Vercel
+  VERCEL_TOKEN:     ${{ secrets.VERCEL_TOKEN }}
+  VERCEL_ORG_ID:    ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # Cypress
+  PROD_BASE_URL: https://telconona-frontend.vercel.app
 
 jobs:
   build:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -29,33 +35,50 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install axios --legacy-peer-deps
+        run: npm ci --legacy-peer-deps
 
       - name: Build project
         run: npm run build
+
+      - name: Run SonarCloud analysis
+        env:
+          SONAR_HOST_URL:     ${{ env.SONAR_HOST_URL }}
+          SONAR_TOKEN:        ${{ env.SONAR_TOKEN }}
+          SONAR_ORG_KEY:      ${{ env.SONAR_ORG_KEY }}
+          SONAR_PROJECT_KEY:  ${{ env.SONAR_PROJECT_KEY }}
+        run: |
+          npm install -g sonar-scanner
+          sonar-scanner \
+            -Dsonar.host.url=$SONAR_HOST_URL \
+            -Dsonar.login=$SONAR_TOKEN \
+            -Dsonar.organization=$SONAR_ORG_KEY \
+            -Dsonar.projectKey=$SONAR_PROJECT_KEY
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-        
+
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
           node-version: '20'
-          
-      - name: Install dependencies
-        run: npm install axios --legacy-peer-deps
-        
+
+      - name: Install dependencies (incluye Cypress)
+        run: npm ci --legacy-peer-deps
+
       - name: Install Vercel CLI
         run: npm install -g vercel
-        
+
       - name: Pull Vercel Environment Variables
         run: vercel pull --yes --token ${{ secrets.VERCEL_TOKEN }}
-        
+
       - name: Deploy to Vercel
-        run: vercel deploy --no-wait --token ${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy --prod --confirm --token ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Run Cypress E2E (production)
+        run: npx cypress run --config baseUrl=${{ env.PROD_BASE_URL }}
+  
