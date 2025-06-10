@@ -9,7 +9,7 @@ module.exports = {
     '\\.(css|scss)$': 'identity-obj-proxy'
   },
   transform: {
-    '^.+\\.(t|j)sx?$': 'babel-jest'
+    '^.+\\.(t|j)sx?$': ['babel-jest', { configFile: './babel.config.test.js' }]
   },
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testMatch: [
