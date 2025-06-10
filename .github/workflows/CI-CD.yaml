@@ -68,7 +68,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies (incluye Cypress)
-        run: npm ci --legacy-peer-deps
+        run: npm i --legacy-peer-deps
 
       - name: Install Vercel CLI
         run: npm install -g vercel
