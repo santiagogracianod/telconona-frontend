@@ -137,7 +137,7 @@ export const handlers = [
     const updatedOrder = {
       ...mockOrders[orderIndex],
       status,
-      progress: progress || mockOrders[orderIndex].progress,
+      progress: progress ?? mockOrders[orderIndex].progress,
     }
 
     // Añadir entrada al historial
@@ -145,7 +145,7 @@ export const handlers = [
       id: `hist-${Date.now()}`,
       date: new Date().toISOString(),
       status,
-      comment: comment || `Estado actualizado a ${status}`,
+      comment: comment ?? `Estado actualizado a ${status}`,
       user: {
         id: "1",
         name: "Técnico Demo",

@@ -7,7 +7,14 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ChevronLeft } from "lucide-react"
 
-export default function OrderPage({ params }: { params: { id: string } }) {
+type OrderPageProps = Readonly<{
+  params: {
+    id: string;
+  };
+}>;
+
+
+export default function OrderPage( { params }: OrderPageProps) {
   return (
     <div className="flex min-h-screen flex-col">
       <DashboardHeader />
