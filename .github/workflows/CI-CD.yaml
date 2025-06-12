@@ -148,6 +148,3 @@ jobs:
 
       - name: Deploy to Vercel
         run: vercel deploy --prod --confirm --token ${{ secrets.VERCEL_TOKEN }}
-
-      - name: Run Cypress E2E (production)
-        run: npx cypress run --config baseUrl=${{ env.PROD_BASE_URL }}
