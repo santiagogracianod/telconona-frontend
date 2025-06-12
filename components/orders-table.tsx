@@ -28,28 +28,35 @@ export function OrdersTable({ orders }: { orders: any[] }) {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "in-progress":
+      case "Asignada":
+        return (
+          <Badge variant="outline" className="flex items-center gap-1 bg-blue-50 text-blue-700 border-blue-200">
+            <Clock className="h-3 w-3" />
+            Asignada
+          </Badge>
+        )
+      case "En curso":
         return (
           <Badge variant="outline" className="flex items-center gap-1 bg-blue-50 text-blue-700 border-blue-200">
             <Clock className="h-3 w-3" />
             En curso
           </Badge>
         )
-      case "paused":
+      case "Pausada":
         return (
           <Badge variant="outline" className="flex items-center gap-1 bg-yellow-50 text-yellow-700 border-yellow-200">
             <PauseCircle className="h-3 w-3" />
             Pausado
           </Badge>
         )
-      case "completed":
+      case "Finalizada":
         return (
           <Badge variant="outline" className="flex items-center gap-1 bg-green-50 text-green-700 border-green-200">
             <CheckCircle className="h-3 w-3" />
-            Finalizado
+            Finalizada
           </Badge>
         )
-      case "additional":
+      case "Requiere aprobación adicional":
         return (
           <Badge variant="outline" className="flex items-center gap-1 bg-red-50 text-red-700 border-red-200">
             <AlertCircle className="h-3 w-3" />
@@ -82,8 +89,8 @@ export function OrdersTable({ orders }: { orders: any[] }) {
                   <TableCell className="font-medium">{order.codigo}</TableCell>
                   <TableCell>{order.descripcion}</TableCell>
                   <TableCell className="hidden md:table-cell">{order.cliente.direccion}</TableCell>
-                  <TableCell className="hidden md:table-cell">{order.estado.nombre}</TableCell>
-                  {/* <TableCell>{getStatusBadge(order.estado.descripcion)}</TableCell> */}
+                  {/* <TableCell className="hidden md:table-cell">{order.estado.nombre}</TableCell> */}
+                  <TableCell>{getStatusBadge(order.estado.nombre)}</TableCell>
                   <TableCell className="hidden md:table-cell">{order.fechaCreacion}</TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" asChild>
