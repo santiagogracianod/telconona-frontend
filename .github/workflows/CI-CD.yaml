@@ -122,7 +122,7 @@ jobs:
             -Dsonar.login=$SONAR_TOKEN \
             -Dsonar.organization=$SONAR_ORG_KEY \
             -Dsonar.projectKey=$SONAR_PROJECT_KEY \
-            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
             -Dsonar.qualitygate.wait=true
 
   deploy:
