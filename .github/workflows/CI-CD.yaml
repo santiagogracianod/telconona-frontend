@@ -1,4 +1,4 @@
-name: CI/CD - TelcoNova
+name: CI/CD - TelcoNova (PRO)
 
 on:
   push:
@@ -80,7 +80,7 @@ jobs:
         run: npm run test -- --coverage
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: coverage
@@ -102,7 +102,7 @@ jobs:
           key: npm-cache-${{ hashFiles('package-lock.json') }}
 
       - name: Download coverage report
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: coverage-report
           path: coverage
