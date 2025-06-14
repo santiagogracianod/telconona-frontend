@@ -1,263 +1,375 @@
 "use client"
 
-import type React from "react"
+import React, { useState, useEffect } from "react"
+import axios from "axios"
+import {
+  createAvance,
+  getAvancesByOrden,
+  uploadImages,
+  getEvidenciasByAvance,
+  updateComentario,            // 🔸 nuevos PUT
+  updateTiempo,
+  CreateAvanceInput,
+  Evidencia,
+} from "@/lib/services/advances-service"
 
-import { useState } from "react"
-// import { useMutation, useQuery } from "@apollo/client"
-// import { ADD_ORDER_EVIDENCE } from "@/lib/graphql/mutations"
-// import { GET_ORDER_BY_ID } from "@/lib/graphql/queries"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card, CardHeader, CardTitle, CardContent,
+} from "@/components/ui/card"
+import {
+  Tabs, TabsList, TabsTrigger, TabsContent,
+} from "@/components/ui/tabs"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Camera, Upload, Loader2, ImageIcon, FileText } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import {
+  Dialog, DialogContent, DialogHeader,
+  DialogTitle, DialogFooter,
+} from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
 
-// Datos de ejemplo para evidencias
-const mockEvidence = [
-  {
-    id: "ev-1",
-    date: "2023-05-10T10:45:00Z",
-    comment: "Llegada al sitio",
-    imageUrl: "/placeholder.svg?height=300&width=300",
-    user: {
-      id: "1",
-      name: "Técnico Demo",
-    },
-  },
-  {
-    id: "ev-2",
-    date: "2023-05-10T11:30:00Z",
-    comment: "Instalación en progreso",
-    imageUrl: "/placeholder.svg?height=300&width=300",
-    user: {
-      id: "1",
-      name: "Técnico Demo",
-    },
-  },
-]
+import { Pencil, Loader2, FileText, Upload, Camera } from "lucide-react"
 
-type OrderEvidenceProps = Readonly<{
-  id: string;
-}>;
+/* ---------- tipos UI ---------- */
+type EvidenceUI = {
+  id: string
+  date: string
+  comentario: string
+  tiempoInvertido: number
+  imageUrls: string[]
+}
+type OrderEvidenceProps = { id: string }
 
-export function OrderEvidence( { id }: OrderEvidenceProps) {
+/* ========== componente ========== */
+export function OrderEvidence({ id }: OrderEvidenceProps) {
+  /* -------------------------------- estado formulario -------------------------------- */
   const [comment, setComment] = useState("")
-  const [images, setImages] = useState<File[]>([])
-  const [previewUrls, setPreviewUrls] = useState<string[]>([])
+  const [timeSpent, setTimeSpent] = useState(0)
+
+  const [files, setFiles] = useState<File[]>([])
+  const [previews, setPreviews] = useState<string[]>([])
+  const MAX_FILES = 3
+
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [orderEvidence, setOrderEvidence] = useState(mockEvidence)
-  const { toast } = useToast()
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const newFiles = Array.from(e.target.files)
-      setImages([...images, ...newFiles])
+  /* -------------------------------- historial -------------------------------- */
+  const [history, setHistory] = useState<EvidenceUI[]>([])
+  const [loadingHist, setLoadingHist] = useState(false)
 
-      // Create preview URLs
-      const newPreviewUrls = newFiles.map((file) => URL.createObjectURL(file))
-      setPreviewUrls([...previewUrls, ...newPreviewUrls])
-    }
+  /* -------------------------------- UI feedback -------------------------------- */
+  const [msg, setMsg] = useState<string | null>(null)
+  const [msgType, setMsgType] = useState<"success" | "error">("success")
+  const [tab, setTab] = useState<"upload" | "history">("upload")
+
+  /* -------------------------------- modal edición -------------------------------- */
+  const [open, setOpen] = useState(false)
+  const [editing, setEditing] = useState<null | {
+    id: string
+    type: "comentario" | "tiempo"
+    value: string | number
+  }>(null)
+  const [justify, setJustify] = useState("")     // solo para tiempo
+  const [savingEdit, setSavingEdit] = useState(false)
+
+  /* -------- carga historial al abrir tab -------- */
+  useEffect(() => {
+    if (tab !== "history") return
+    setLoadingHist(true)
+
+    getAvancesByOrden(Number(id))
+      .then(async lista => {
+        const conImgs = await Promise.all(
+          lista.map(async a => {
+            const evids = await getEvidenciasByAvance(a.id)
+            return {
+              id: a.id,
+              date: (a as any).creadoEn ?? new Date().toISOString(),
+              comentario: a.comentario,
+              tiempoInvertido: a.tiempoInvertido,
+              imageUrls: evids.map((ev: Evidencia) => ev.url),
+            }
+          })
+        )
+        setHistory(conImgs)
+      })
+      .catch(err => {
+        setMsgType("error")
+        setMsg(
+          axios.isAxiosError(err)
+            ? err.response?.data?.message || "No fue posible cargar avances."
+            : (err as Error).message
+        )
+      })
+      .finally(() => setLoadingHist(false))
+  }, [tab, id])
+
+  /* -------- selector imágenes -------- */
+  const onFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return
+    const selected = Array.from(e.target.files)
+    setFiles(prev => [...prev, ...selected].slice(0, MAX_FILES))
+    setPreviews(prev => [
+      ...prev,
+      ...selected.slice(0, MAX_FILES - prev.length).map(f => URL.createObjectURL(f)),
+    ])
+  }
+  const removeImg = (i: number) => {
+    URL.revokeObjectURL(previews[i])
+    setFiles(files.filter((_, idx) => idx !== i))
+    setPreviews(previews.filter((_, idx) => idx !== i))
   }
 
+  /* -------- submit nuevo avance -------- */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setMsg(null)
 
-    if (!comment.trim() && images.length === 0) {
-      toast({
-        title: "Error",
-        description: "Debes añadir un comentario o al menos una imagen.",
-        variant: "destructive",
-      })
-      return
+    if (files.length > MAX_FILES) {
+      setMsgType("error")
+      return setMsg("Solo puedes subir hasta 3 imágenes por avance.")
+    }
+    if (timeSpent <= 0 && !comment.trim() && files.length === 0) {
+      setMsgType("error")
+      return setMsg("Añade tiempo, comentario o al menos una imagen.")
     }
 
     setIsSubmitting(true)
+    try {
+      const body: CreateAvanceInput = {
+        ordenId: Number(id),
+        tecnicoId: Number(localStorage.getItem("telconova-user")),
+        comentario: comment.trim(),
+        tiempoInvertido: timeSpent,
+      }
+      const nuevo = await createAvance(body)
 
-    // Simulamos una operación asíncrona
-    setTimeout(() => {
-      // Crear nueva evidencia
-      const newEvidence = {
-        id: `ev-${Date.now()}`,
-        date: new Date().toISOString(),
-        comment: comment.trim(),
-        imageUrl: images.length > 0 ? "/placeholder.svg?height=300&width=300" : null,
-        user: {
-          id: "1",
-          name: "Técnico Demo",
-        },
+      let urls: string[] = []
+      if (files.length) {
+        const evid = await uploadImages(nuevo.id, files)
+        urls = evid.map(ev => ev.url)
       }
 
-      // Actualizar el estado local
-      setOrderEvidence([newEvidence, ...orderEvidence])
+      setHistory(prev => [
+        {
+          id: nuevo.id,
+          date: nuevo.creadoEn,
+          comentario: nuevo.comentario,
+          tiempoInvertido: nuevo.tiempoInvertido,
+          imageUrls: urls.length ? urls : previews,
+        },
+        ...prev,
+      ])
 
-      toast({
-        title: "Evidencia cargada",
-        description: `Se han cargado ${images.length} imágenes y comentarios para la orden ${id}.`,
-      })
-
-      // Limpiar el formulario
+      setMsgType("success")
+      setMsg("Avance guardado correctamente.")
       setComment("")
-      setImages([])
-      setPreviewUrls([])
+      setTimeSpent(0)
+      previews.forEach(URL.revokeObjectURL)
+      setFiles([])
+      setPreviews([])
+    } catch (err: any) {
+      setMsgType("error")
+      setMsg(
+        axios.isAxiosError(err)
+          ? err.response?.data?.message || "Error al guardar avance."
+          : err.message
+      )
+    } finally {
       setIsSubmitting(false)
-    }, 1500)
+    }
   }
 
-  const removeImage = (index: number) => {
-    const newImages = [...images]
-    const newPreviewUrls = [...previewUrls]
-
-    // Revoke the object URL to avoid memory leaks
-    URL.revokeObjectURL(newPreviewUrls[index])
-
-    newImages.splice(index, 1)
-    newPreviewUrls.splice(index, 1)
-
-    setImages(newImages)
-    setPreviewUrls(newPreviewUrls)
+  /* -------------------------------- guardar edición -------------------------------- */
+  const saveEdit = async () => {
+    if (!editing) return
+    setSavingEdit(true)
+    try {
+      if (editing.type === "comentario") {
+        await updateComentario(editing.id, editing.value as string)
+        setHistory(h =>
+          h.map(a =>
+            a.id === editing.id ? { ...a, comentario: editing.value as string } : a
+          )
+        )
+      } else {
+        await updateTiempo(editing.id, editing.value as number, justify)
+        setHistory(h =>
+          h.map(a =>
+            a.id === editing.id
+              ? { ...a, tiempoInvertido: editing.value as number }
+              : a
+          )
+        )
+      }
+      setOpen(false)
+    } catch {
+      alert("Error al actualizar")
+    } finally {
+      setSavingEdit(false)
+    }
   }
 
+  /* ------------------------------- render ------------------------------- */
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Evidencias y comentarios</CardTitle>
-      </CardHeader>
+      <CardHeader><CardTitle>Evidencias y Avances</CardTitle></CardHeader>
       <CardContent>
-        <Tabs defaultValue="upload">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="upload" className="flex items-center gap-2">
-              <Upload className="h-4 w-4" />
-              <span>Cargar evidencia</span>
-            </TabsTrigger>
-            <TabsTrigger value="history" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              <span>Historial</span>
-            </TabsTrigger>
+        <Tabs value={tab} onValueChange={v => setTab(v as any)}>
+          {/* ---------------- pestañas ---------------- */}
+          <TabsList className="grid grid-cols-2 w-full">
+            <TabsTrigger value="upload"><Upload className="h-4 w-4 mr-1"/>Nuevo avance</TabsTrigger>
+            <TabsTrigger value="history"><FileText className="h-4 w-4 mr-1"/>Historial</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="upload" className="space-y-4 pt-4">
+          {/* ============== FORMULARIO ============== */}
+          <TabsContent value="upload" className="pt-4 space-y-4">
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* tiempo */}
               <div className="space-y-2">
-                <Label htmlFor="images">Imágenes</Label>
-                <div className="grid gap-4">
-                  <div className="flex items-center justify-center w-full">
-                    <label
-                      htmlFor="dropzone-file"
-                      className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted/40 hover:bg-muted/60"
-                    >
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <Camera className="w-8 h-8 mb-2 text-muted-foreground" />
-                        <p className="mb-1 text-sm text-muted-foreground">
-                          <span className="font-medium">Haz clic para cargar</span> o arrastra y suelta
-                        </p>
-                        <p className="text-xs text-muted-foreground">PNG, JPG o JPEG (máx. 10MB)</p>
+                <Label>Tiempo invertido (min)</Label>
+                <Input type="number" min={0} value={timeSpent}
+                       onChange={e => setTimeSpent(Number(e.target.value))}/>
+              </div>
+
+              {/* comentario */}
+              <div className="space-y-2">
+                <Label>Comentario</Label>
+                <textarea rows={4} className="w-full p-2 border rounded"
+                          value={comment}
+                          onChange={e => setComment(e.target.value)}/>
+              </div>
+
+              {/* imágenes */}
+              <div className="space-y-2">
+                <Label>Imágenes (máx 3)</Label>
+                <label
+                  htmlFor="file"
+                  onDragOver={e => e.preventDefault()}
+                  onDrop={e => { e.preventDefault(); onFiles({ target: { files: e.dataTransfer.files } } as any) }}
+                  className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed rounded-lg cursor-pointer bg-muted/40 hover:bg-muted/60"
+                >
+                  <Camera className="h-6 w-6 text-muted-foreground" />
+                  <p className="text-xs text-muted-foreground">Haz clic o arrastra archivos</p>
+                </label>
+                <Input id="file" type="file" accept="image/*" multiple className="hidden" onChange={onFiles} />
+
+                {previews.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {previews.map((url, i) => (
+                      <div key={i} className="relative group">
+                        <img src={url} className="h-20 w-full object-cover rounded-md"/>
+                        <button type="button" onClick={() => removeImg(i)}
+                          className="absolute top-1 right-1 bg-black/70 text-white rounded-full px-[6px] text-xs opacity-0 group-hover:opacity-100">×</button>
                       </div>
-                      <Input
-                        id="dropzone-file"
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        className="hidden"
-                        onChange={handleImageChange}
-                      />
-                    </label>
+                    ))}
                   </div>
-
-                  {previewUrls.length > 0 && (
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                      {previewUrls.map((url, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={url ?? "/placeholder.svg"}
-                            alt={`Evidencia ${index + 1}`}
-                            className="h-24 w-full object-cover rounded-md"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeImage(index)}
-                            className="absolute top-1 right-1 bg-black/70 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <span className="sr-only">Eliminar</span>
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="16"
-                              height="16"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M18 6 6 18" />
-                              <path d="m6 6 12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="comment">Comentario</Label>
-                <Textarea
-                  id="comment"
-                  placeholder="Describe el trabajo realizado o los problemas encontrados..."
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  rows={4}
-                />
-              </div>
+              {/* alert */}
+              {msg && (
+                <Alert variant={msgType === "error" ? "destructive" : "default"}>
+                  <AlertTitle>{msgType === "error" ? "Error" : "Éxito"}</AlertTitle>
+                  <AlertDescription>{msg}</AlertDescription>
+                </Alert>
+              )}
 
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Cargando evidencia...
-                  </>
-                ) : (
-                  "Cargar evidencia"
-                )}
+                {isSubmitting ? <><Loader2 className="animate-spin h-4 w-4 mr-2"/>Guardando…</> : "Guardar avance"}
               </Button>
             </form>
           </TabsContent>
 
-          <TabsContent value="history" className="space-y-4 pt-4">
-            <div className="space-y-4">
-              {orderEvidence.length > 0 ? (
-                orderEvidence.map((evidence: any) => (
-                  <div key={evidence.id} className="space-y-2 border-b pb-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <ImageIcon className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Evidencia cargada</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground">{new Date(evidence.date).toLocaleString()}</span>
-                    </div>
-                    <p className="text-sm">{evidence.comment}</p>
-                    {evidence.imageUrl && (
-                      <div className="grid grid-cols-3 gap-2 mt-2">
-                        <img
-                          src={evidence.imageUrl ?? "/placeholder.svg"}
-                          alt={`Evidencia ${evidence.id}`}
-                          className="h-20 w-full object-cover rounded-md"
-                        />
-                      </div>
-                    )}
+          {/* ============== HISTORIAL ============== */}
+          <TabsContent value="history" className="pt-4 space-y-4">
+            {loadingHist ? (
+              <div className="flex justify-center py-6"><Loader2 className="animate-spin h-6 w-6"/></div>
+            ) : history.length ? (
+              history.map(ev => (
+                <div key={ev.id} className="border-b pb-4 space-y-2">
+                  {/* fecha + tiempo + lápiz */}
+                  <div className="flex justify-between text-sm">
+                    <span>{new Date(ev.date).toLocaleString()}</span>
+                    <span className="text-muted-foreground">
+                      {ev.tiempoInvertido} min
+                      <Pencil className="inline ml-1 cursor-pointer" size={14}
+                        onClick={()=>{
+                          setEditing({ id: ev.id, type: "tiempo", value: ev.tiempoInvertido })
+                          setJustify("")
+                          setOpen(true)
+                        }}
+                      />
+                    </span>
                   </div>
-                ))
-              ) : (
-                <div className="text-center text-sm text-muted-foreground py-4">No hay evidencias para mostrar</div>
-              )}
-            </div>
+
+                  {/* comentario + lápiz */}
+                  <p className="group flex items-start">
+                    {ev.comentario}
+                    <Pencil size={14} className="ml-1 invisible group-hover:visible cursor-pointer"
+                      onClick={()=>{
+                        setEditing({ id: ev.id, type: "comentario", value: ev.comentario })
+                        setOpen(true)
+                      }}
+                    />
+                  </p>
+
+                  {/* imágenes */}
+                  {ev.imageUrls.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2">
+                      {ev.imageUrls.map((u, idx) => (
+                        <img key={idx} src={u} className="h-20 w-full object-cover rounded-md"/>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <p className="text-center text-sm text-muted-foreground">No hay avances registrados</p>
+            )}
           </TabsContent>
         </Tabs>
       </CardContent>
+
+      {/* =================== MODAL EDICIÓN =================== */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editing?.type === "comentario" ? "Editar comentario" : "Editar tiempo"}
+            </DialogTitle>
+          </DialogHeader>
+
+          {editing?.type === "comentario" && (
+            <Input
+              value={editing.value as string}
+              onChange={e =>
+                setEditing(prev => prev ? { ...prev, value: e.target.value } : prev)
+              }
+            />
+          )}
+
+          {editing?.type === "tiempo" && (
+            <>
+              <Label className="mt-2">Nuevo tiempo (min)</Label>
+              <Input
+                type="number"
+                min={0}
+                value={editing.value as number}
+                onChange={e =>
+                  setEditing(prev => prev ? { ...prev, value: Number(e.target.value) } : prev)
+                }
+              />
+              <Label className="mt-2">Justificación</Label>
+              <Textarea rows={3} value={justify} onChange={e => setJustify(e.target.value)}/>
+            </>
+          )}
+
+          <DialogFooter>
+            <Button disabled={savingEdit} onClick={saveEdit}>Guardar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }
