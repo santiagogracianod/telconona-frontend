@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select"
 import { Loader2 } from "lucide-react"
 
-const OPTIONS = ["Asignada","En curso","Pausada","Finalizada"]
+const OPTIONS = ["Asignada","En curso","Pausada","Finalizada","Requiere aprobacion adicional"]
 
 type Props = {
   id: string
