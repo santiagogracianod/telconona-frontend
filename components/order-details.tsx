@@ -15,9 +15,6 @@ export function OrderDetails({ order }: { order: any }) {
 
   console.log('Token:', localStorage.getItem('telconova-token'));
   
-
-
-    
   return (
     <Card>
       <CardHeader>
