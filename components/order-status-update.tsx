@@ -1,125 +1,88 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { useToast } from "@/hooks/use-toast"
+import { FeedbackDialog } from "@/components/feedback-dialog"
+
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
+  Card, CardHeader, CardTitle, CardContent,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectTrigger, SelectValue,
+  SelectContent, SelectItem,
 } from "@/components/ui/select"
-import {
-  Loader2,
-  CheckCircle,
-  Clock,
-  PauseCircle,
-  AlertCircle,
-} from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { Loader2 } from "lucide-react"
 
-type OrderStatusProps = {
+const OPTIONS = ["Asignada","En curso","Pausada","Finalizada"]
+
+type Props = {
   id: string
   currentStatus: string
-  onStatusChange: (newStatus: string) => void
+  onStatusChange:(s:string)=>Promise<any>
+  loading?: boolean
+  readonly?: boolean
 }
 
 export function OrderStatusUpdate({
-  id,
-  currentStatus,
-  onStatusChange,
-}: OrderStatusProps) {
-  const [status, setStatus] = useState<string>(currentStatus)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const { toast } = useToast()
+  currentStatus, onStatusChange, loading, readonly,
+}: Props) {
+  const [status, setStatus]  = useState(currentStatus)
+  const [dialog,setDialog]   = useState<{m:string; ok:boolean}|null>(null)
+  const { toast }            = useToast()
 
-  useEffect(() => {
-    setStatus(currentStatus)
-  }, [currentStatus])
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function submit(e:React.FormEvent){
     e.preventDefault()
-    setIsSubmitting(true)
-    try {
+    try{
       await onStatusChange(status)
-      toast({
-        title: "Estado actualizado",
-        description: `La orden ${id} ha sido actualizada.`,
-      })
-    } catch (err) {
-      console.error("Error al actualizar estado:", err)
-    } finally {
-      setIsSubmitting(false)
+      toast({ title:"Estado actualizado", description:status })
+      setDialog({ m:`Nuevo estado: ${status}`, ok:true })
+    }catch(e:any){
+      toast({ title:"Error", description:e.message, variant:"destructive"})
+      setDialog({ m:e.message, ok:false })
     }
   }
 
-  const iconByStatus = {
-    "En curso": <Clock className="h-5 w-5 text-blue-500" />,
-    "Pausada": <PauseCircle className="h-5 w-5 text-yellow-500" />,
-    "Finalizada": <CheckCircle className="h-5 w-5 text-green-500" />,
-    "Requiere aprobacion adicional": (
-      <AlertCircle className="h-5 w-5 text-red-500" />
-    ),
-  }
-
   return (
-    <Card className="border-telco-200">
-      <CardHeader className="bg-telco-500 text-white rounded-t-lg">
-        <CardTitle>Actualizar estado</CardTitle>
-      </CardHeader>
-      <CardContent className="pt-6">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label
-              htmlFor="estado-select"
-              className="text-sm font-medium"
-            >
-              Estado actual
-            </label>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger
-                id="estado-select"
-                className="border-telco-200 bg-telco-50/50"
-              >
-                <SelectValue placeholder="Seleccionar estado" />
+    <>
+      <Card>
+        <CardHeader className="bg-telco-500 text-white rounded-t-lg">
+          <CardTitle>Actualizar estado</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6 space-y-4">
+          <form onSubmit={submit} className="flex items-end gap-3">
+            <Select
+              disabled={readonly}
+              value={status}
+              onValueChange={setStatus}>
+              <SelectTrigger className="w-48">
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {Object.keys(iconByStatus).map((label) => (
-                  <SelectItem key={label} value={label}>
-                    <div className="flex items-center gap-2">
-                      {iconByStatus[label as keyof typeof iconByStatus]}
-                      <span>{label}</span>
-                    </div>
-                  </SelectItem>
-                ))}
+                {OPTIONS.map(op=>
+                  <SelectItem key={op} value={op}>{op}</SelectItem>)}
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="flex justify-end">
             <Button
               type="submit"
-              disabled={isSubmitting}
-              variant="telco"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Actualizando...
-                </>
-              ) : (
-                "Actualizar estado"
-              )}
+              disabled={readonly||loading||status===currentStatus}>
+              {loading
+                ? <><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Guardando…</>
+                : "Actualizar"}
             </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+          </form>
+        </CardContent>
+      </Card>
+
+      {dialog && (
+        <FeedbackDialog
+          open={!!dialog}
+          onOpenChange={()=>setDialog(null)}
+          title={dialog.ok ? "Éxito" : "Error"}
+          description={dialog.m}
+          variant={dialog.ok ? "success":"error"}
+        />
+      )}
+    </>
   )
 }

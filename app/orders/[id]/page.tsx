@@ -1,48 +1,56 @@
 "use client"
 
 import Link from "next/link"
+import { useParams } from "next/navigation"
 import { ChevronLeft } from "lucide-react"
+
 import { DashboardHeader }   from "@/components/dashboard-header"
 import { OrderDetails }      from "@/components/order-details"
 import { OrderStatusUpdate } from "@/components/order-status-update"
 import { OrderEvidence }     from "@/components/order-evidence"
 import { OrderMaterials }    from "@/components/order-materials"
 import { Button }            from "@/components/ui/button"
-import { useParams } from "next/navigation"
 
 import {
   useOrderById,
   useUpdateOrderStatus,
 } from "@/lib/services/orders-graphql"
 
-type PageProps = { params: { id: string } }
+/* -------------------------------------------------------------------------- */
 
 export default function OrderPage() {
-  /* obtiene params desde el hook */
-  const { id } = useParams<{ id: string }>()  // id es string
+  /* ------------- obtener id de la URL ------------- */
+  const { id } = useParams<{ id: string }>()           // “5”, “12”, …
 
-  /* 1· lee la orden */
+  /* ------------- query: detalle de la orden ------------- */
   const { data, loading, error, refetch } = useOrderById(id)
   const order = data?.obtenerOrdenPorId
 
-  /* 2· mutación cambio de estado */
-  const [updateStatus, { loading: updating }] = useUpdateOrderStatus()
+  /* ------------- estado “solo lectura” ------------- */
+  const isReadonly = order?.estado?.nombre === "Finalizada"
+
+  /* ------------- mutación: cambio de estado ------------- */
+  const [ updateStatus, { loading: updating }] = useUpdateOrderStatus()
 
   const handleStatusUpdate = async (newStatus: string) => {
+    if (isReadonly) return      // protección extra
     await updateStatus({ variables: { id, estado: newStatus } })
-    await refetch()
+    await refetch()             // refresca la orden
   }
 
-  if (loading) return <p>Cargando orden…</p>
-  if (error)   return <p className="text-red-500">Error: {error.message}</p>
-  if (!order)  return <p>Orden no encontrada.</p>
+  /* ------------- estados de carga / error ------------- */
+  if (loading)   return <p className="p-6">Cargando orden…</p>
+  if (error)     return <p className="p-6 text-red-500">Error: {error.message}</p>
+  if (!order)    return <p className="p-6">Orden no encontrada.</p>
+
+  /* ---------------------------------------------------------------------- */
 
   return (
     <div className="flex min-h-screen flex-col">
       <DashboardHeader />
 
-      <main className="flex-1 space-y-6 p-6">
-        {/* --- encabezado --- */}
+      <main className="flex-1 container mx-auto space-y-6 py-6">
+        {/* ---------- encabezado ---------- */}
         <div className="flex items-center gap-4">
           <Button variant="outline" size="sm" asChild>
             <Link href="/dashboard">
@@ -52,21 +60,33 @@ export default function OrderPage() {
           <h1 className="text-2xl font-bold">Orden #{order.codigo}</h1>
         </div>
 
-        {/* --- layout columnas --- */}
-        <div className="grid gap-6 md:grid-cols-3">
-          <div className="md:col-span-2 space-y-6">
+        {/* ---------- columnas ---------- */}
+        <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
+          {/* ----------- izquierda ----------- */}
+          <div className="space-y-6">
             <OrderDetails order={order} />
-            <OrderEvidence id={id} />
+
+            <OrderEvidence
+              id={id}
+              readonly={isReadonly}
+            />
           </div>
 
+          {/* ----------- derecha ----------- */}
           <div className="space-y-6">
-            <OrderStatusUpdate
+            {!isReadonly && (
+              <OrderStatusUpdate
+                id={id}
+                currentStatus={order.estado.nombre}
+                onStatusChange={handleStatusUpdate}
+                loading={updating}
+              />
+            )}
+
+            <OrderMaterials
               id={id}
-              currentStatus={order.estado.nombre}
-              onStatusChange={handleStatusUpdate}
-              loading={updating}
+              readonly={isReadonly}
             />
-            <OrderMaterials id={id} />
           </div>
         </div>
       </main>
