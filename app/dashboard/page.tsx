@@ -12,13 +12,17 @@ import {
 
 export default function DashboardPage() {
   const [status, setStatus] = useState<"all" | string>("all")
-  const userId = typeof window !== "undefined" ? localStorage.getItem("telconova-user") : null
+  const userId = typeof window !== "undefined"
+    ? localStorage.getItem("telconova-user")
+    : ""
 
-  /* UNA sola consulta activa según el filtro */
+  // Llamamos ambos hooks **siempre** y en el mismo orden
+  const userResult   = useOrdersByUser(userId)
+  const estadoResult = useOrdersByEstado(status, userId)
+
+  // Seleccionamos los valores según el filtro
   const { data, loading, error } =
-    status === "all"
-      ? useOrdersByUser(userId ?? "")
-      : useOrdersByEstado(status)
+    status === "all" ? userResult   : estadoResult
 
   const orders = data
     ? status === "all"
