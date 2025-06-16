@@ -1,126 +1,139 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { useState } from "react"
+import { useToast } from "@/hooks/use-toast"
+import { FeedbackDialog } from "@/components/feedback-dialog"
+
+import {
+  useAllMaterials,
+  useMaterialsOfOrder,
+  useAddMaterialToOrder,
+  useUpdateMaterialQty,
+} from "@/lib/services/materials-graphql"
+
+import {
+  Card, CardHeader, CardTitle, CardContent,
+} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import axios from "axios"
+import { Button } from "@/components/ui/button"
+import {
+  Select, SelectTrigger, SelectValue,
+  SelectContent, SelectItem,
+} from "@/components/ui/select"
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog"
+import { Plus, Pencil } from "lucide-react"
 
-type OrderMaterialsProps = Readonly<{
-  id: string;
-}>;
+type Props={ id:string; readonly?:boolean }
 
-export function OrderMaterials({ id }: OrderMaterialsProps) {
-  const [materials, setMaterials] = useState<any[]>([])
-  const [requiresMaterial, setRequiresMaterial] = useState(false)
-  const [usedMaterials, setUsedMaterials] = useState<{ id: string; quantity: number }[]>([])
-  const [customMaterial, setCustomMaterial] = useState("")
-  const [customMaterialComment, setCustomMaterialComment] = useState("")
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+export function OrderMaterials({ id, readonly }:Props){
+  const { data:all }          = useAllMaterials()
+  const { data:used,refetch } = useMaterialsOfOrder(id)
+  const [add]                 = useAddMaterialToOrder()
+  const [upd]                 = useUpdateMaterialQty()
 
-  useEffect(() => {
-    const fetchOrderMaterials = async () => {
-      try {
-        setLoading(true)
-        setError(null)
+  /* estado ui */
+  const [matId, setMatId]     = useState("")
+  const [qty,   setQty]       = useState(1)
+  const [edit,  setEdit]      = useState<any>(null)
+  const [just,  setJust]      = useState("")
+  const [dlg,   setDlg]       = useState<{m:string; ok:boolean}|null>(null)
+  const { toast }             = useToast()
 
-        const response = await axios.get(
-          `https://didactic-space-journey-q7vp4wrrqrwjh9w6v-8080.app.github.dev/ordenes/${id}`
-        )
-        const order = response.data
-        setRequiresMaterial(order.tipo.requiereMaterial)
-        setMaterials(order.tipo.materiales ?? []) // Suponiendo que `materiales` es una lista de materiales disponibles
-      } catch (err: any) {
-        if (axios.isAxiosError(err)) {
-          setError(err.response?.statusText ?? err.message)
-        } else {
-          setError("Error inesperado al obtener los materiales de la orden")
-        }
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchOrderMaterials()
-  }, [id])
-
-  const handleMaterialChange = (materialId: string, quantity: number) => {
-    setUsedMaterials((prev) => {
-      const existing = prev.find((m) => m.id === materialId)
-      if (existing) {
-        return prev.map((m) => (m.id === materialId ? { ...m, quantity } : m))
-      }
-      return [...prev, { id: materialId, quantity }]
-    })
-  }
-
-  const handleSubmit = async () => {
-    try {
-      const payload = {
-        usedMaterials,
-        customMaterial: customMaterial ? { name: customMaterial, comment: customMaterialComment } : null,
-      }
-      console.log("Enviando materiales utilizados:", payload)
-      // Aquí puedes enviar los datos al backend
-    } catch (error) {
-      console.error("Error al enviar los materiales utilizados:", error)
+  async function handleAdd(){
+    try{
+      const mat = all?.listarMateriales.find((m:any)=>m.id===matId)
+      await add({ variables:{input:{ ordenId:id, nombreMaterial:mat.nombre, cantidad:qty }} })
+      setDlg({ m:`${mat.nombre} x${qty} añadido`, ok:true })
+      toast({ title:"Material añadido",description:`${mat.nombre} x${qty}` })
+      setMatId(""); setQty(1); refetch()
+    }catch(e:any){
+      setDlg({ m:e.message, ok:false })
+      toast({ title:"Error", description:e.message,variant:"destructive"})
     }
   }
 
-  if (loading) {
-    return <p>Cargando materiales...</p>
+  async function saveEdit(){
+    try{
+      await upd({ variables:{input:{ materialOrdenId:edit.id,
+                                     nuevaCantidad:qty,
+                                     justificacion:just }} })
+      setDlg({ m:`Cantidad actualizada (${qty})`, ok:true })
+      toast({ title:"Actualizado", description:`Nueva cantidad: ${qty}` })
+      setEdit(null); setQty(1); setJust(""); refetch()
+    }catch(e:any){
+      setDlg({ m:e.message, ok:false })
+      toast({ title:"Error", description:e.message,variant:"destructive"})
+    }
   }
 
-  if (error) {
-    return <p>Error: {error}</p>
-  }
+  return(
+    <>
+      <Card>
+        <CardHeader><CardTitle>Materiales utilizados</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
 
-  if (!requiresMaterial) {
-    return null
-  }
-
-  return (
-    <Card>
-      <CardHeader className="bg-telco-500 text-white rounded-t-lg">
-        <CardTitle>Materiales utilizados</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-4">
-          <h3 className="text-sm font-medium">Selecciona los materiales utilizados</h3>
-          {materials.map((material) => (
-            <div key={material.id} className="flex items-center gap-4">
-              <span className="flex-1">{material.nombre}</span>
-              <Input
-                type="number"
-                min="0"
-                placeholder="Cantidad"
-                onChange={(e) => handleMaterialChange(material.id, parseInt(e.target.value, 10))}
-              />
+          {!readonly && (
+            <div className="flex items-end gap-2">
+              <Select value={matId} onValueChange={setMatId}>
+                <SelectTrigger className="w-48"><SelectValue placeholder="Material"/></SelectTrigger>
+                <SelectContent>
+                  {all?.listarMateriales.map((m:any)=>
+                    <SelectItem key={m.id} value={m.id}>{m.nombre}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Input type="number" min={1} className="w-20" value={qty}
+                     onChange={e=>setQty(Number(e.target.value))}/>
+              <Button size="sm" onClick={handleAdd} disabled={!matId}>
+                <Plus className="h-4 w-4 mr-1"/>Añadir
+              </Button>
             </div>
-          ))}
-        </div>
+          )}
 
-        <div className="space-y-4">
-          <h3 className="text-sm font-medium">¿Material no listado?</h3>
-          <Input
-            placeholder="Nombre del material"
-            value={customMaterial}
-            onChange={(e) => setCustomMaterial(e.target.value)}
-          />
-          <Textarea
-            placeholder="Comentario sobre el material utilizado"
-            value={customMaterialComment}
-            onChange={(e) => setCustomMaterialComment(e.target.value)}
-            rows={4}
-          />
-        </div>
+          {used?.obtenerMaterialesDeOrden.length
+            ? (
+              <ul className="space-y-2">
+                {used.obtenerMaterialesDeOrden.map((u:any)=>(
+                  <li key={u.id} className="flex justify-between items-center border p-2 rounded">
+                    <span>{u.material.nombre}<span className="ml-2 text-muted-foreground">x{u.cantidad}</span></span>
+                    {!readonly && (
+                      <Button variant="ghost" size="icon"
+                              onClick={()=>{setEdit(u); setQty(u.cantidad); setJust("");}}>
+                        <Pencil className="h-4 w-4"/>
+                      </Button>)}
+                  </li>
+                ))}
+              </ul>
+            )
+            : <p className="text-sm text-muted-foreground">No hay materiales.</p>}
+        </CardContent>
+      </Card>
 
-        <Button onClick={handleSubmit} variant="telco">
-          Guardar materiales
-        </Button>
-      </CardContent>
-    </Card>
+      {/* dialog edición */}
+      <Dialog open={!!edit} onOpenChange={()=>setEdit(null)}>
+        <DialogContent className="space-y-4">
+          <DialogHeader><DialogTitle>Editar material</DialogTitle></DialogHeader>
+          <Input type="number" min={1} value={qty}
+                 onChange={e=>setQty(Number(e.target.value))}/>
+          <Input placeholder="Justificación" value={just}
+                 onChange={e=>setJust(e.target.value)}/>
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={()=>setEdit(null)}>Cancelar</Button>
+            <Button onClick={saveEdit} disabled={!just.trim()}>Guardar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {dlg && (
+        <FeedbackDialog
+          open={!!dlg}
+          onOpenChange={()=>setDlg(null)}
+          title={dlg.ok ? "Éxito" : "Error"}
+          description={dlg.m}
+          variant={dlg.ok ? "success":"error"}
+        />
+      )}
+    </>
   )
 }

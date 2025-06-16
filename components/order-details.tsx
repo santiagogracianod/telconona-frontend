@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { useEffect } from "react"
 import {
   User,
   MapPin,
@@ -11,6 +12,9 @@ import {
 } from "lucide-react"
 
 export function OrderDetails({ order }: { order: any }) {
+
+  console.log('Token:', localStorage.getItem('telconova-token'));
+  
   return (
     <Card>
       <CardHeader>

@@ -1,94 +1,92 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
-import axios from "axios"
-import { OrderDetails } from "@/components/order-details"
-import { OrderStatusUpdate } from "@/components/order-status-update"
-import { OrderEvidence } from "@/components/order-evidence"
-import { OrderMaterials } from "@/components/order-materials"
-import { DashboardHeader } from "@/components/dashboard-header"
-import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { useParams } from "next/navigation"
 import { ChevronLeft } from "lucide-react"
 
-type OrderPageProps = {
-  params: Promise<{ id: string }>
-}
+import { DashboardHeader }   from "@/components/dashboard-header"
+import { OrderDetails }      from "@/components/order-details"
+import { OrderStatusUpdate } from "@/components/order-status-update"
+import { OrderEvidence }     from "@/components/order-evidence"
+import { OrderMaterials }    from "@/components/order-materials"
+import { Button }            from "@/components/ui/button"
 
-export default function OrderPage({ params }: OrderPageProps) {
-  const { id } = React.use(params)
+import {
+  useOrderById,
+  useUpdateOrderStatus,
+} from "@/lib/services/orders-graphql"
 
-  const [order, setOrder] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+/* -------------------------------------------------------------------------- */
 
-  const fetchOrder = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const { data } = await axios.get(
-        `https://didactic-space-journey-q7vp4wrrqrwjh9w6v-8080.app.github.dev/ordenes/${id}`
-      )
-      setOrder(data)
-    } catch (err: any) {
-      setError(
-        axios.isAxiosError(err)
-          ? err.response?.statusText ?? err.message
-          : "Error inesperado"
-      )
-    } finally {
-      setLoading(false)
-    }
-  }
+export default function OrderPage() {
+  /* ------------- obtener id de la URL ------------- */
+  const { id } = useParams<{ id: string }>()           // “5”, “12”, …
 
-  useEffect(() => {
-    fetchOrder()
-  }, [id])
+  /* ------------- query: detalle de la orden ------------- */
+  const { data, loading, error, refetch } = useOrderById(id)
+  const order = data?.obtenerOrdenPorId
+
+  /* ------------- estado “solo lectura” ------------- */
+  const isReadonly = order?.estado?.nombre === "Finalizada"
+
+  /* ------------- mutación: cambio de estado ------------- */
+  const [ updateStatus, { loading: updating }] = useUpdateOrderStatus()
 
   const handleStatusUpdate = async (newStatus: string) => {
-  
-    try {
-      await axios.patch(
-        `https://didactic-space-journey-q7vp4wrrqrwjh9w6v-8080.app.github.dev/ordenes/${id}/estado`,
-        newStatus,
-        { headers: { "Content-Type": "application/json" } }
-      )
-      await fetchOrder()
-    } catch (err) {
-      console.error("Error actualizando el estado", err)
-    }
+    if (isReadonly) return      // protección extra
+    await updateStatus({ variables: { id, estado: newStatus } })
+    await refetch()             // refresca la orden
   }
 
-  if (loading) return <p>Cargando orden…</p>
-  if (error) return <p className="text-red-500">Error: {error}</p>
-  if (!order) return <p>Orden no encontrada.</p>
+  /* ------------- estados de carga / error ------------- */
+  if (loading)   return <p className="p-6">Cargando orden…</p>
+  if (error)     return <p className="p-6 text-red-500">Error: {error.message}</p>
+  if (!order)    return <p className="p-6">Orden no encontrada.</p>
+
+  /* ---------------------------------------------------------------------- */
 
   return (
     <div className="flex min-h-screen flex-col">
       <DashboardHeader />
-      <main className="flex-1 space-y-6 p-6">
+
+      <main className="flex-1 container mx-auto space-y-6 py-6">
+        {/* ---------- encabezado ---------- */}
         <div className="flex items-center gap-4">
           <Button variant="outline" size="sm" asChild>
             <Link href="/dashboard">
-              <ChevronLeft className="mr-1 h-4 w-4" />
-              Volver
+              <ChevronLeft className="mr-1 h-4 w-4" /> Volver
             </Link>
           </Button>
-          <h1 className="text-2xl font-bold">Orden #{id}</h1>
+          <h1 className="text-2xl font-bold">Orden #{order.codigo}</h1>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
-          <div className="md:col-span-2 space-y-6">
-            <OrderDetails order={order} />
-            <OrderEvidence id={id} />
-          </div>
+        {/* ---------- columnas ---------- */}
+        <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
+          {/* ----------- izquierda ----------- */}
           <div className="space-y-6">
-            <OrderStatusUpdate
+            <OrderDetails order={order} />
+
+            <OrderEvidence
               id={id}
-              currentStatus={order.estado.nombre}
-              onStatusChange={handleStatusUpdate}
+              readonly={isReadonly}
             />
-            <OrderMaterials id={id} />
+          </div>
+
+          {/* ----------- derecha ----------- */}
+          <div className="space-y-6">
+            {!isReadonly && (
+              <OrderStatusUpdate
+                id={id}
+                currentStatus={order.estado.nombre}
+                onStatusChange={handleStatusUpdate}
+                loading={updating}
+              />
+            )}
+
+            <OrderMaterials
+              id={id}
+              readonly={isReadonly}
+            />
           </div>
         </div>
       </main>
