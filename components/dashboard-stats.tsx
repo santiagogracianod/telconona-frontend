@@ -42,7 +42,7 @@ export function DashboardStats({ orders }: DashboardStatsProps) {
       bg: "bg-green-100",
     },
     {
-      title: "Requerimientos adicionales",
+      title: "Req. aprobación adoicional",
       value: count(5),
       icon: AlertCircle,
       color: "text-red-500",

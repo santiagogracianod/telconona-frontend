@@ -71,8 +71,10 @@ export function OrderMaterials({ id, readonly }:Props){
   return(
     <>
       <Card>
-        <CardHeader><CardTitle>Materiales utilizados</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
+        <CardHeader className="bg-telco-500 text-white rounded-t-lg">
+          <CardTitle>Materiales utilizados</CardTitle>
+          </CardHeader>
+        <CardContent className="pt-6 space-y-4">
 
           {!readonly && (
             <div className="flex items-end gap-2">
@@ -96,7 +98,7 @@ export function OrderMaterials({ id, readonly }:Props){
               <ul className="space-y-2">
                 {used.obtenerMaterialesDeOrden.map((u:any)=>(
                   <li key={u.id} className="flex justify-between items-center border p-2 rounded">
-                    <span>{u.material.nombre}<span className="ml-2 text-muted-foreground">x{u.cantidad}</span></span>
+                    <span>{u.material.nombre}<span className="ml-2 text-muted-foreground">Cantidad: {u.cantidad}</span></span>
                     {!readonly && (
                       <Button variant="ghost" size="icon"
                               onClick={()=>{setEdit(u); setQty(u.cantidad); setJust("");}}>
