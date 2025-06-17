@@ -198,7 +198,7 @@ export function OrderEvidence({ id, readonly = false }: Props) {
           <div className="flex justify-between text-sm">
             <span>{new Date(ev.date).toLocaleString()}</span>
             <span className="text-muted-foreground flex items-center gap-1">
-              {ev.tiempoInvertido} min
+              Tiempo invertido: {ev.tiempoInvertido} min
               {!readonly && (
                 <Pencil size={14} className="cursor-pointer"
                   onClick={()=>{
