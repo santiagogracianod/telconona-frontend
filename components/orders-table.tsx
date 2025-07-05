@@ -71,7 +71,7 @@ export function OrdersTable({ orders }: { orders: any[] }) {
   return (
     <div className="space-y-4">
       <div className="rounded-md border">
-        <Table>
+        <Table id="orders-table">
           <TableHeader>
             <TableRow>
               <TableHead>Código</TableHead>
